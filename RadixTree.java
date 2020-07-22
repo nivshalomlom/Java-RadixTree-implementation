@@ -297,13 +297,6 @@ public class RadixTree implements Serializable {
 		if (ptr.equals(this.getTreeRoot()))
 			ret_val = autocomplete(ptr, "").stream().filter(i -> i.startsWith(string)).collect(Collectors.toList());
 		else if (!ptr.isLeaf()) ret_val = autocomplete(ptr, string);
-		try {
-			this.mutex.lock();
-			autocompleteCache.put(string, ret_val);
-		}
-		finally {
-			this.mutex.unlock();
-		}
 		return trimList(ret_val, 0, resultAmount);
 	}
 
@@ -316,6 +309,14 @@ public class RadixTree implements Serializable {
 			if (autocompleteCache.containsKey(string + "" + child))
 				ret_val = Stream.concat(autocompleteCache.get(string + "" + child).stream(), ret_val.stream()).collect(Collectors.toList());
 			else ret_val = Stream.concat(autocomplete(ptr.getChildByString(child), string + "" + child).stream(), ret_val.stream()).collect(Collectors.toList());
+		}
+		// Caching the results for future use
+		try {
+			this.mutex.lock();
+			autocompleteCache.put(string, ret_val);
+		}
+		finally {
+			this.mutex.unlock();
 		}
 		return ret_val;
 	}
